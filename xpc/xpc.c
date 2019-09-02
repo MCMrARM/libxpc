@@ -95,6 +95,7 @@ xpc_object_t xpc_dictionary_get_value(xpc_object_t obj, const char *key) {
 void xpc_dictionary_set_value(xpc_object_t obj, const char *key, xpc_object_t value) {
     struct xpc_dict *dict = (struct xpc_dict *) obj;
     unsigned long key_hash = _xpc_dictionary_hash_key(key);
+    size_t key_length;
     struct xpc_dict_el *el = xpc_dictionary_find_el(obj, key, key_hash);
 
     if (!value) {
@@ -105,20 +106,24 @@ void xpc_dictionary_set_value(xpc_object_t obj, const char *key, xpc_object_t va
                 el->next->prev = el->prev;
             xpc_free(el->value);
             free(el);
+            --dict->count;
         }
         return;
     }
     if (el) {
         el->value = value;
     } else {
-        el = malloc(sizeof(struct xpc_dict_el) + strlen(key) + 1);
+        key_length = strlen(key);
+        el = malloc(sizeof(struct xpc_dict_el) + key_length + 1);
         el->prev = NULL;
         el->next = dict->buckets[XPC_DICT_BUCKET(key_hash)];
         if (el->next)
             el->next->prev = el;
-        strcpy(el->key, key);
+        el->key_length = key_length;
+        memcpy(el->key, key, key_length + 1);
         el->hash = key_hash;
         el->value = value;
         dict->buckets[XPC_DICT_BUCKET(key_hash)] = el;
+        ++dict->count;
     }
 }

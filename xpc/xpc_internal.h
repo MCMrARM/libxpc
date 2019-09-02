@@ -22,6 +22,7 @@ struct xpc_dict_el {
     unsigned long hash;
     xpc_object_t value;
     struct xpc_dict_el *prev, *next;
+    size_t key_length;
     char key[];
 };
 
