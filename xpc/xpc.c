@@ -2,6 +2,7 @@
 #include "xpc_internal.h"
 #include <string.h>
 #include <malloc.h>
+#include <math.h>
 
 static void _xpc_dictionary_free(xpc_object_t obj);
 
@@ -195,6 +196,37 @@ void xpc_dictionary_set_value(xpc_object_t obj, const char *key, xpc_object_t va
         ++dict->count;
     }
 }
+
+bool xpc_dictionary_get_bool(xpc_object_t obj, const char *key) {
+    xpc_object_t o = xpc_dictionary_get_value(obj, key);
+    return (xpc_get_type(o) == XPC_BOOL ? xpc_bool_get_value(o) : false);
+}
+int64_t xpc_dictionary_get_int64(xpc_object_t obj, const char *key) {
+    xpc_object_t o = xpc_dictionary_get_value(obj, key);
+    return (xpc_get_type(o) == XPC_INT64 ? xpc_int64_get_value(o) : 0);
+}
+uint64_t xpc_dictionary_get_uint64(xpc_object_t obj, const char *key) {
+    xpc_object_t o = xpc_dictionary_get_value(obj, key);
+    return (xpc_get_type(o) == XPC_UINT64 ? xpc_uint64_get_value(o) : 0);
+}
+double xpc_dictionary_get_double(xpc_object_t obj, const char *key) {
+    xpc_object_t o = xpc_dictionary_get_value(obj, key);
+    return (xpc_get_type(o) == XPC_DOUBLE ? xpc_double_get_value(o) : NAN);
+}
+const void *xpc_dictionary_get_data(xpc_object_t obj, const char *key, size_t *length) {
+    xpc_object_t o = xpc_dictionary_get_value(obj, key);
+    if (xpc_get_type(o) == XPC_DATA) {
+        *length = xpc_data_get_length(o);
+        return xpc_data_get_bytes_ptr(obj);
+    }
+    *length = 0;
+    return NULL;
+}
+const char *xpc_dictionary_get_string(xpc_object_t obj, const char *key) {
+    xpc_object_t o = xpc_dictionary_get_value(obj, key);
+    return (xpc_get_type(o) == XPC_STRING ? xpc_string_get_string_ptr(o) : NULL);
+}
+
 void xpc_dictionary_set_bool(xpc_object_t obj, const char *key, bool value) {
     xpc_dictionary_set_value(obj, key, xpc_bool_create(value));
 }
