@@ -103,7 +103,7 @@ static size_t _xpc_dictionary_serialize(xpc_object_t obj, uint8_t *buf) {
     struct xpc_dict *dict = (struct xpc_dict *) obj;
     int i;
     struct xpc_dict_el *el;
-    XPC_WRITE(xpc_s_type_t, (XPC_DICTIONARY << 12))
+    XPC_WRITE(xpc_s_type_t, XPC_SERIALIZED_TYPE(XPC_DICTIONARY))
     size_ptr = (uint32_t *) buf;
     XPC_WRITE(uint32_t, 0)
     XPC_WRITE(uint32_t, dict->count)
@@ -118,7 +118,7 @@ static size_t _xpc_dictionary_serialize(xpc_object_t obj, uint8_t *buf) {
             el = el->next;
         }
     }
-    *size_ptr = buf - buf_i;
+    *size_ptr = buf - (uint8_t *) (size_ptr + 1);
     return buf - buf_i;
 }
 
@@ -171,7 +171,7 @@ static xpc_object_t _xpc_deserialize_dictionary(uint8_t *buf, size_t *offp, size
     xpc_object_t ret, val;
     ret = xpc_dictionary_create(NULL, NULL, 0);
     r_size = XPC_READ(uint32_t);
-    m_len = off - sizeof(uint32_t) - sizeof(xpc_s_type_t) + r_size;
+    m_len = off + r_size;
     if (len > m_len)
         len = m_len;
     r_cnt = XPC_READ(uint32_t);
