@@ -23,6 +23,11 @@ void xpc_free(xpc_object_t obj) {
         free(v);
 }
 
+xpc_type_t xpc_get_type(xpc_object_t obj) {
+    struct xpc_value *v = (struct xpc_value *) obj;
+    return v->type;
+}
+
 xpc_object_t xpc_bool_create(bool value) {
     struct xpc_value *v = _xpc_alloc_value(XPC_BOOL, sizeof(bool));
     XPC_VALUE(v, bool) = value;

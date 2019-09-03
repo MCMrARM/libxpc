@@ -22,8 +22,11 @@ enum xpc_value_type {
     XPC_ARRAY = 14,
     XPC_DICTIONARY = 15
 };
+typedef enum xpc_value_type xpc_type_t;
 
 void xpc_free(xpc_object_t obj);
+
+xpc_type_t xpc_get_type(xpc_object_t obj);
 
 xpc_object_t xpc_bool_create(bool value);
 bool xpc_bool_get_value(xpc_object_t obj);
