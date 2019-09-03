@@ -28,20 +28,36 @@ xpc_object_t xpc_bool_create(bool value) {
     XPC_VALUE(v, bool) = value;
     return v;
 }
+bool xpc_bool_get_value(xpc_object_t obj) {
+    struct xpc_value *v = (struct xpc_value *) obj;
+    return XPC_VALUE(v, bool);
+}
 xpc_object_t xpc_int64_create(int64_t value) {
     struct xpc_value *v = _xpc_alloc_value(XPC_INT64, sizeof(int64_t));
     XPC_VALUE(v, int64_t) = value;
     return v;
+}
+int64_t xpc_int64_get_value(xpc_object_t obj) {
+    struct xpc_value *v = (struct xpc_value *) obj;
+    return XPC_VALUE(v, int64_t);
 }
 xpc_object_t xpc_uint64_create(uint64_t value) {
     struct xpc_value *v = _xpc_alloc_value(XPC_UINT64, sizeof(int64_t));
     XPC_VALUE(v, uint64_t) = value;
     return v;
 }
+uint64_t xpc_uint64_get_value(xpc_object_t obj) {
+    struct xpc_value *v = (struct xpc_value *) obj;
+    return XPC_VALUE(v, uint64_t);
+}
 xpc_object_t xpc_double_create(double value) {
     struct xpc_value *v = _xpc_alloc_value(XPC_DOUBLE, sizeof(int64_t));
     XPC_VALUE(v, double) = value;
     return v;
+}
+double xpc_double_get_value(xpc_object_t obj) {
+    struct xpc_value *v = (struct xpc_value *) obj;
+    return XPC_VALUE(v, double);
 }
 
 static struct xpc_value_varlen *_xpc_alloc_value_varlen(enum xpc_value_type type, size_t data_size) {

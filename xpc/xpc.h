@@ -26,9 +26,13 @@ enum xpc_value_type {
 void xpc_free(xpc_object_t obj);
 
 xpc_object_t xpc_bool_create(bool value);
+bool xpc_bool_get_value(xpc_object_t obj);
 xpc_object_t xpc_int64_create(int64_t value);
+int64_t xpc_int64_get_value(xpc_object_t obj);
 xpc_object_t xpc_uint64_create(uint64_t value);
+uint64_t xpc_uint64_get_value(xpc_object_t obj);
 xpc_object_t xpc_double_create(double value);
+double xpc_double_get_value(xpc_object_t obj);
 xpc_object_t xpc_data_create(const void *value, size_t length);
 size_t xpc_data_get_length(xpc_object_t obj);
 size_t xpc_data_get_bytes(xpc_object_t obj, void *ptr, size_t off, size_t len);
