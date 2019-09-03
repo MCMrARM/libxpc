@@ -1,4 +1,4 @@
-#include "xpc_debug.h"
+#include <xpc/xpc_debug.h>
 #include "xpc_internal.h"
 #include <stdio.h>
 #include <inttypes.h>

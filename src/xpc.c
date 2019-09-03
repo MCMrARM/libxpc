@@ -1,4 +1,4 @@
-#include "xpc.h"
+#include <xpc/xpc.h>
 #include "xpc_internal.h"
 #include <string.h>
 #include <malloc.h>

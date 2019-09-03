@@ -1,7 +1,7 @@
 #ifndef XPC_INTERNAL_H
 #define XPC_INTERNAL_H
 
-#include "xpc.h"
+#include <xpc/xpc.h>
 
 struct xpc_value {
     enum xpc_value_type type;
