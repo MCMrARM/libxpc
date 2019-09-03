@@ -5,13 +5,16 @@
 
 typedef uint32_t xpc_s_type_t;
 
+#define XPC_BIN_MAGIC 0x42133742
+#define XPC_BIN_VERSION 5
+
 #define XPC_DATA_PAD_SIZE(len) ((len+ 3) / 4 * 4)
 #define XPC_STRING_PAD_LEN(len) (((len + 1) + 3) / 4 * 4)
 #define XPC_SERIALIZED_TYPE(typ) (typ << 12)
 
 static size_t _xpc_dictionary_serialized_size(xpc_object_t obj);
 
-size_t xpc_serialized_size(xpc_object_t obj) {
+static size_t _xpc_serialized_size(xpc_object_t obj) {
     struct xpc_value *v = (struct xpc_value *) obj;
     switch (v->type) {
         case XPC_BOOL:
@@ -42,18 +45,22 @@ static size_t _xpc_dictionary_serialized_size(xpc_object_t obj) {
         el = dict->buckets[i];
         while (el) {
             ret += XPC_STRING_PAD_LEN(el->key_length);
-            ret += xpc_serialized_size(el->value);
+            ret += _xpc_serialized_size(el->value);
             el = el->next;
         }
     }
     return ret;
 }
 
+size_t xpc_serialized_size(xpc_object_t obj) {
+    return _xpc_serialized_size(obj) + sizeof(uint32_t) * 2;
+}
+
 #define XPC_WRITE(type, value) *((type *) buf) = value; buf += sizeof(type);
 
 static size_t _xpc_dictionary_serialize(xpc_object_t obj, uint8_t *buf);
 
-size_t xpc_serialize(xpc_object_t o, uint8_t *buf) {
+static size_t _xpc_serialize(xpc_object_t o, uint8_t *buf) {
     size_t len;
     uint8_t *const buf_i = buf;
     struct xpc_value *v = (struct xpc_value *) o;
@@ -114,12 +121,18 @@ static size_t _xpc_dictionary_serialize(xpc_object_t obj, uint8_t *buf) {
             memcpy(buf, el->key, el->key_length + 1);
             memset(&buf[el->key_length + 1], 0, key_size - (el->key_length + 1));
             buf += key_size;
-            buf += xpc_serialize(el->value, buf);
+            buf += _xpc_serialize(el->value, buf);
             el = el->next;
         }
     }
     *size_ptr = buf - (uint8_t *) (size_ptr + 1);
     return buf - buf_i;
+}
+
+size_t xpc_serialize(xpc_object_t o, uint8_t *buf) {
+    XPC_WRITE(uint32_t, XPC_BIN_MAGIC);
+    XPC_WRITE(uint32_t, XPC_BIN_VERSION);
+    return _xpc_serialize(o, buf) + sizeof(__uint32_t) * 2;
 }
 
 #define XPC_READ(type) ({ off += sizeof(type); off <= len ? *((type *) (&buf[off - sizeof(type)])) : 0; })
@@ -188,5 +201,9 @@ static xpc_object_t _xpc_deserialize_dictionary(uint8_t *buf, size_t *offp, size
 
 xpc_object_t xpc_deserialize(uint8_t *buf, size_t len) {
     size_t off = 0;
+    uint32_t magic = XPC_READ(uint32_t);
+    uint32_t version = XPC_READ(uint32_t);
+    if (magic != XPC_BIN_MAGIC || version != XPC_BIN_VERSION)
+        return NULL;
     return _xpc_deserialize(buf, &off, len);
 }
