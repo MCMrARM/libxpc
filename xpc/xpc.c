@@ -178,6 +178,7 @@ void xpc_dictionary_set_value(xpc_object_t obj, const char *key, xpc_object_t va
         return;
     }
     if (el) {
+        xpc_free(el->value);
         el->value = value;
     } else {
         key_length = strlen(key);
@@ -193,4 +194,22 @@ void xpc_dictionary_set_value(xpc_object_t obj, const char *key, xpc_object_t va
         dict->buckets[XPC_DICT_BUCKET(key_hash)] = el;
         ++dict->count;
     }
+}
+void xpc_dictionary_set_bool(xpc_object_t obj, const char *key, bool value) {
+    xpc_dictionary_set_value(obj, key, xpc_bool_create(value));
+}
+void xpc_dictionary_set_int64(xpc_object_t obj, const char *key, int64_t value) {
+    xpc_dictionary_set_value(obj, key, xpc_int64_create(value));
+}
+void xpc_dictionary_set_uint64(xpc_object_t obj, const char *key, uint64_t value) {
+    xpc_dictionary_set_value(obj, key, xpc_uint64_create(value));
+}
+void xpc_dictionary_set_double(xpc_object_t obj, const char *key, double value) {
+    xpc_dictionary_set_value(obj, key, xpc_double_create(value));
+}
+void xpc_dictionary_set_data(xpc_object_t obj, const char *key, const void *value, size_t length) {
+    xpc_dictionary_set_value(obj, key, xpc_data_create(value, length));
+}
+void xpc_dictionary_set_string(xpc_object_t obj, const char *key, const char *value) {
+    xpc_dictionary_set_value(obj, key, xpc_string_create(value));
 }

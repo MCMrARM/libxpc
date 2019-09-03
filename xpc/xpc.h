@@ -48,5 +48,11 @@ const char *xpc_string_get_string_ptr(xpc_object_t obj);
 xpc_object_t xpc_dictionary_create(const char **keys, const xpc_object_t *values, size_t count);
 xpc_object_t xpc_dictionary_get_value(xpc_object_t obj, const char *key);
 void xpc_dictionary_set_value(xpc_object_t obj, const char *key, xpc_object_t value);
+void xpc_dictionary_set_bool(xpc_object_t obj, const char *key, bool value);
+void xpc_dictionary_set_int64(xpc_object_t obj, const char *key, int64_t value);
+void xpc_dictionary_set_uint64(xpc_object_t obj, const char *key, uint64_t value);
+void xpc_dictionary_set_double(xpc_object_t obj, const char *key, double value);
+void xpc_dictionary_set_data(xpc_object_t obj, const char *key, const void *value, size_t length);
+void xpc_dictionary_set_string(xpc_object_t obj, const char *key, const char *value);
 
 #endif //XPC_H
