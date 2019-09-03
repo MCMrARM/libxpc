@@ -9,6 +9,12 @@ struct xpc_value {
 };
 #define XPC_VALUE(v, type) (*((type *) v->value))
 
+struct xpc_value_varlen {
+    enum xpc_value_type type;
+    size_t size;
+    char value[];
+};
+
 #define XPC_DICT_NBUCKETS 8
 #define XPC_DICT_BUCKET(hash) (hash % XPC_DICT_NBUCKETS)
 

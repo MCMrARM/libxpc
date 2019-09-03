@@ -5,6 +5,7 @@
 
 typedef uint32_t xpc_s_type_t;
 
+#define XPC_DATA_PAD_SIZE(len) ((len+ 3) / 4 * 4)
 #define XPC_STRING_PAD_LEN(len) (((len + 1) + 3) / 4 * 4)
 #define XPC_SERIALIZED_TYPE(typ) (typ << 12)
 
@@ -21,6 +22,10 @@ size_t xpc_serialized_size(xpc_object_t obj) {
             return sizeof(xpc_s_type_t) + sizeof(uint64_t);
         case XPC_DOUBLE:
             return sizeof(xpc_s_type_t) + sizeof(double);
+        case XPC_DATA:
+            return sizeof(xpc_s_type_t) + sizeof(int32_t) + XPC_DATA_PAD_SIZE(xpc_data_get_length(obj));
+        case XPC_STRING:
+            return sizeof(xpc_s_type_t) + sizeof(int32_t) + XPC_STRING_PAD_LEN(xpc_string_get_length(obj));
         case XPC_DICTIONARY:
             return _xpc_dictionary_serialized_size(obj);
         default:
@@ -49,6 +54,7 @@ static size_t _xpc_dictionary_serialized_size(xpc_object_t obj) {
 static size_t _xpc_dictionary_serialize(xpc_object_t obj, uint8_t *buf);
 
 size_t xpc_serialize(xpc_object_t o, uint8_t *buf) {
+    size_t len;
     uint8_t *const buf_i = buf;
     struct xpc_value *v = (struct xpc_value *) o;
     switch (v->type) {
@@ -67,6 +73,20 @@ size_t xpc_serialize(xpc_object_t o, uint8_t *buf) {
         case XPC_DOUBLE:
             XPC_WRITE(xpc_s_type_t, XPC_SERIALIZED_TYPE(XPC_DOUBLE))
             XPC_WRITE(double, XPC_VALUE(v, double))
+            break;
+        case XPC_DATA:
+            XPC_WRITE(xpc_s_type_t, XPC_SERIALIZED_TYPE(XPC_DATA))
+            len = xpc_data_get_length(o);
+            XPC_WRITE(uint32_t, len)
+            memcpy(buf, xpc_data_get_bytes_ptr(o), len);
+            buf += len;
+            break;
+        case XPC_STRING:
+            XPC_WRITE(xpc_s_type_t, XPC_SERIALIZED_TYPE(XPC_STRING))
+            len = xpc_string_get_length(o) + 1;
+            XPC_WRITE(uint32_t, len)
+            memcpy(buf, xpc_string_get_string_ptr(o), len);
+            buf += len;
             break;
         case XPC_DICTIONARY:
             return _xpc_dictionary_serialize(o, buf);
@@ -107,7 +127,7 @@ static size_t _xpc_dictionary_serialize(xpc_object_t obj, uint8_t *buf) {
 static xpc_object_t _xpc_deserialize_dictionary(uint8_t *buf, size_t *offp, size_t len);
 
 static xpc_object_t _xpc_deserialize(uint8_t *buf, size_t *offp, size_t len) {
-    size_t off = *offp;
+    size_t tlen, off = *offp;
     xpc_object_t ret = NULL;
     xpc_s_type_t type;
     type = XPC_READ(xpc_s_type_t) >> 12;
@@ -123,6 +143,18 @@ static xpc_object_t _xpc_deserialize(uint8_t *buf, size_t *offp, size_t len) {
             break;
         case XPC_DOUBLE:
             ret = xpc_double_create(XPC_READ(double));
+            break;
+        case XPC_DATA:
+            tlen = XPC_READ(int32_t);
+            ret = xpc_data_create(&buf[off], tlen);
+            off += tlen;
+            break;
+        case XPC_STRING:
+            tlen = XPC_READ(int32_t);
+            if (tlen > 0) {
+                ret = xpc_string_create_with_length((char *) &buf[off], tlen - 1);
+                off += tlen;
+            }
             break;
         case XPC_DICTIONARY:
             *offp = off;

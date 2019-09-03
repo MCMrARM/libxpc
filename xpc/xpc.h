@@ -29,6 +29,14 @@ xpc_object_t xpc_bool_create(bool value);
 xpc_object_t xpc_int64_create(int64_t value);
 xpc_object_t xpc_uint64_create(uint64_t value);
 xpc_object_t xpc_double_create(double value);
+xpc_object_t xpc_data_create(const void *value, size_t length);
+size_t xpc_data_get_length(xpc_object_t obj);
+size_t xpc_data_get_bytes(xpc_object_t obj, void *ptr, size_t off, size_t len);
+const void *xpc_data_get_bytes_ptr(xpc_object_t obj);
+xpc_object_t xpc_string_create(const char *value);
+xpc_object_t xpc_string_create_with_length(const char *value, size_t len);
+size_t xpc_string_get_length(xpc_object_t obj);
+const char *xpc_string_get_string_ptr(xpc_object_t obj);
 
 xpc_object_t xpc_dictionary_create(const char **keys, const xpc_object_t *values, size_t count);
 xpc_object_t xpc_dictionary_get_value(xpc_object_t obj, const char *key);

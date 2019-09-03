@@ -44,6 +44,52 @@ xpc_object_t xpc_double_create(double value) {
     return v;
 }
 
+static struct xpc_value_varlen *_xpc_alloc_value_varlen(enum xpc_value_type type, size_t data_size) {
+    struct xpc_value_varlen *val = malloc(sizeof(struct xpc_value_varlen) + data_size);
+    val->type = type;
+    val->size = data_size;
+    return val;
+}
+xpc_object_t xpc_data_create(const void *value, size_t length) {
+    struct xpc_value_varlen *v = _xpc_alloc_value_varlen(XPC_DATA, length);
+    memcpy(v->value, value, length);
+    return v;
+}
+size_t xpc_data_get_length(xpc_object_t obj) {
+    struct xpc_value_varlen *v = (struct xpc_value_varlen *) obj;
+    return v->size;
+}
+size_t xpc_data_get_bytes(xpc_object_t obj, void *ptr, size_t off, size_t len) {
+    struct xpc_value_varlen *v = (struct xpc_value_varlen *) obj;
+    if (len > v->size - off)
+        len = v->size - off;
+    memcpy(ptr, &v->value[off], len);
+    return len;
+}
+const void *xpc_data_get_bytes_ptr(xpc_object_t obj) {
+    struct xpc_value_varlen *v = (struct xpc_value_varlen *) obj;
+    return v->value;
+}
+xpc_object_t xpc_string_create(const char *value) {
+    size_t len = strlen(value);
+    struct xpc_value_varlen *v = _xpc_alloc_value_varlen(XPC_STRING, len + 1);
+    memcpy(v->value, value, len + 1);
+    return v;
+}
+xpc_object_t xpc_string_create_with_length(const char *value, size_t len) {
+    struct xpc_value_varlen *v = _xpc_alloc_value_varlen(XPC_STRING, len + 1);
+    memcpy(v->value, value, len + 1);
+    return v;
+}
+size_t xpc_string_get_length(xpc_object_t obj) {
+    struct xpc_value_varlen *v = (struct xpc_value_varlen *) obj;
+    return v->size - 1;
+}
+const char *xpc_string_get_string_ptr(xpc_object_t obj) {
+    struct xpc_value_varlen *v = (struct xpc_value_varlen *) obj;
+    return v->value;
+}
+
 static unsigned long _xpc_dictionary_hash_key(const char *str) {
     unsigned long hash = 5381;
     while (*str) {

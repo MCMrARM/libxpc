@@ -27,6 +27,15 @@ void xpc_debug_print(xpc_object_t obj, xpc_debug_write out) {
             snprintf(buf, sizeof(buf), "%lf", XPC_VALUE(val, double));
             out(buf);
             break;
+        case XPC_DATA:
+            snprintf(buf, sizeof(buf), "<binary data %li>", xpc_data_get_length(obj));
+            out(buf);
+            break;
+        case XPC_STRING:
+            out("\"");
+            out(xpc_string_get_string_ptr(obj));
+            out("\"");
+            break;
         case XPC_DICTIONARY:
             _xpc_debug_print_dict(obj, out);
             break;
