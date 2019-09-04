@@ -69,6 +69,15 @@ double xpc_double_get_value(xpc_object_t obj) {
     struct xpc_value *v = (struct xpc_value *) obj;
     return XPC_VALUE(v, double);
 }
+xpc_object_t xpc_uuid_create(unsigned char value[16]) {
+    struct xpc_value *v = _xpc_alloc_value(XPC_STRING, sizeof(unsigned char[16]));
+    memcpy(v->value, value, sizeof(unsigned char[16]));
+    return v;
+}
+const unsigned char *xpc_uuid_get_bytes(xpc_object_t obj) {
+    struct xpc_value *v = (struct xpc_value *) obj;
+    return (const unsigned char *) v->value;
+}
 
 static struct xpc_value_varlen *_xpc_alloc_value_varlen(enum xpc_value_type type, size_t data_size) {
     struct xpc_value_varlen *val = malloc(sizeof(struct xpc_value_varlen) + data_size);

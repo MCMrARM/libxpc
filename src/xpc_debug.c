@@ -37,6 +37,12 @@ void xpc_debug_print(xpc_object_t obj, xpc_debug_write out) {
             out(xpc_string_get_string_ptr(obj));
             out("\"");
             break;
+        case XPC_UUID:
+            snprintf(buf, sizeof(buf), "%02x%02x%02x%02x-%02x%02x-%02x%02x-%02x%02x-%02x%02x%02x%02x%02x%02x",
+                    buf[0], buf[1], buf[2], buf[3], buf[4], buf[5], buf[6], buf[7], buf[8], buf[9],
+                    buf[10], buf[11], buf[12], buf[13], buf[14], buf[15]);
+            out(buf);
+            break;
         case XPC_ARRAY:
             _xpc_debug_print_array(obj, out);
             break;
