@@ -44,7 +44,7 @@ xpc_object_t xpc_string_create(const char *value);
 xpc_object_t xpc_string_create_with_length(const char *value, size_t len);
 size_t xpc_string_get_length(xpc_object_t obj);
 const char *xpc_string_get_string_ptr(xpc_object_t obj);
-xpc_object_t xpc_uuid_create(unsigned char value[16]);
+xpc_object_t xpc_uuid_create(const unsigned char value[16]);
 const unsigned char *xpc_uuid_get_bytes(xpc_object_t obj);
 
 xpc_object_t xpc_dictionary_create(const char **keys, const xpc_object_t *values, size_t count);

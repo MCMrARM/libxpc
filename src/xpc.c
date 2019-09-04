@@ -69,8 +69,8 @@ double xpc_double_get_value(xpc_object_t obj) {
     struct xpc_value *v = (struct xpc_value *) obj;
     return XPC_VALUE(v, double);
 }
-xpc_object_t xpc_uuid_create(unsigned char value[16]) {
-    struct xpc_value *v = _xpc_alloc_value(XPC_STRING, sizeof(unsigned char[16]));
+xpc_object_t xpc_uuid_create(const unsigned char value[16]) {
+    struct xpc_value *v = _xpc_alloc_value(XPC_UUID, sizeof(unsigned char[16]));
     memcpy(v->value, value, sizeof(unsigned char[16]));
     return v;
 }

@@ -8,6 +8,7 @@ static void _xpc_debug_print_dict(xpc_object_t obj, xpc_debug_write out);
 
 void xpc_debug_print(xpc_object_t obj, xpc_debug_write out) {
     char buf[64];
+    unsigned char *dat;
     struct xpc_value *val = (struct xpc_value *) obj;
     switch (val->type) {
         case XPC_BOOL:
@@ -38,9 +39,10 @@ void xpc_debug_print(xpc_object_t obj, xpc_debug_write out) {
             out("\"");
             break;
         case XPC_UUID:
+            dat = (unsigned char *) val->value;
             snprintf(buf, sizeof(buf), "%02x%02x%02x%02x-%02x%02x-%02x%02x-%02x%02x-%02x%02x%02x%02x%02x%02x",
-                    buf[0], buf[1], buf[2], buf[3], buf[4], buf[5], buf[6], buf[7], buf[8], buf[9],
-                    buf[10], buf[11], buf[12], buf[13], buf[14], buf[15]);
+                     dat[0], dat[1], dat[2], dat[3], dat[4], dat[5], dat[6], dat[7], dat[8], dat[9],
+                     dat[10], dat[11], dat[12], dat[13], dat[14], dat[15]);
             out(buf);
             break;
         case XPC_ARRAY:

@@ -107,6 +107,10 @@ static size_t _xpc_serialize(xpc_object_t o, uint8_t *buf) {
             len = xpc_string_get_length(o);
             XPC_COPY_PADDED(xpc_string_get_string_ptr(o), len)
             break;
+        case XPC_UUID:
+            XPC_WRITE(xpc_s_type_t, XPC_SERIALIZED_TYPE(XPC_UUID))
+            memcpy(buf, xpc_uuid_get_bytes(o), sizeof(unsigned char[16]));
+            buf += sizeof(unsigned char[16]);
         case XPC_DICTIONARY:
             return _xpc_dictionary_serialize(o, buf);
         case XPC_ARRAY:
@@ -195,6 +199,10 @@ static xpc_object_t _xpc_deserialize(const uint8_t *buf, size_t *offp, size_t le
             else
                 ret = xpc_string_create("");
             off += XPC_DATA_PAD_SIZE(tlen);
+            break;
+        case XPC_UUID:
+            ret = xpc_uuid_create((const unsigned char *) &buf[off]);
+            off += sizeof(unsigned char[16]);
             break;
         case XPC_DICTIONARY:
             *offp = off;
