@@ -32,4 +32,10 @@ struct xpc_dict_el {
     char key[];
 };
 
+struct xpc_array {
+    enum xpc_value_type type;
+    size_t count, mem_count;
+    xpc_object_t **value;
+};
+
 #endif //XPC_INTERNAL_H

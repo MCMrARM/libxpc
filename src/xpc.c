@@ -3,8 +3,10 @@
 #include <string.h>
 #include <malloc.h>
 #include <math.h>
+#include <sys/param.h>
 
 static void _xpc_dictionary_free(xpc_object_t obj);
+static void _xpc_array_free(xpc_object_t obj);
 
 static struct xpc_value *_xpc_alloc_value(enum xpc_value_type type, size_t data_size) {
     struct xpc_value *val = malloc(sizeof(struct xpc_value) + data_size);
@@ -20,6 +22,8 @@ void xpc_free(xpc_object_t obj) {
     v = (struct xpc_value *) obj;
     if (v->type == XPC_DICTIONARY)
         _xpc_dictionary_free(v);
+    else if (v->type == XPC_ARRAY)
+        _xpc_array_free(v);
     else
         free(v);
 }
@@ -143,6 +147,7 @@ static void _xpc_dictionary_free(xpc_object_t obj) {
             free(tel);
         }
     }
+    free(obj);
 }
 static struct xpc_dict_el *xpc_dictionary_find_el(xpc_object_t obj, const char *key, unsigned long key_hash) {
     struct xpc_dict *dict = (struct xpc_dict *) obj;
@@ -244,4 +249,41 @@ void xpc_dictionary_set_data(xpc_object_t obj, const char *key, const void *valu
 }
 void xpc_dictionary_set_string(xpc_object_t obj, const char *key, const char *value) {
     xpc_dictionary_set_value(obj, key, xpc_string_create(value));
+}
+
+xpc_object_t xpc_array_create(const xpc_object_t *values, size_t count) {
+    struct xpc_array *arr = malloc(sizeof(struct xpc_array));
+    arr->type = XPC_ARRAY;
+    arr->count = count;
+    arr->mem_count = count;
+    arr->value = NULL;
+    if (count > 0) {
+        arr->value = malloc(count * sizeof(xpc_object_t));
+        memcpy(arr->value, values, count * sizeof(xpc_object_t));
+    }
+    return arr;
+}
+static void _xpc_array_free(xpc_object_t obj) {
+    size_t i;
+    struct xpc_array *arr = (struct xpc_array *) obj;
+    for (i = 0; i < arr->count; i++)
+        xpc_free(arr->value[i]);
+    free(obj);
+}
+void xpc_array_append_value(xpc_object_t obj, xpc_object_t value) {
+    struct xpc_array *arr = (struct xpc_array *) obj;
+    if (arr->count >= arr->mem_count) {
+        arr->mem_count = MAX(arr->mem_count * 2, 4);
+        arr->value = realloc(arr->value, arr->mem_count * sizeof(xpc_object_t));
+    }
+    arr->value[arr->count] = value;
+    ++arr->count;
+}
+void xpc_array_set_value(xpc_object_t obj, size_t index, xpc_object_t value) {
+    struct xpc_array *arr = (struct xpc_array *) obj;
+    arr->value[index] = value;
+}
+xpc_object_t xpc_array_get_value(xpc_object_t obj, size_t index) {
+    struct xpc_array *arr = (struct xpc_array *) obj;
+    return arr->value[index];
 }
