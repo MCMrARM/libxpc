@@ -8,8 +8,7 @@ typedef uint32_t xpc_s_type_t;
 #define XPC_BIN_MAGIC 0x42133742
 #define XPC_BIN_VERSION 5
 
-#define XPC_DATA_PAD_SIZE(len) ((len+ 3) / 4 * 4)
-#define XPC_STRING_PAD_LEN(len) (((len + 1) + 3) / 4 * 4)
+#define XPC_DATA_PAD_SIZE(len) (((len) + 3) / 4 * 4)
 #define XPC_SERIALIZED_TYPE(typ) (typ << 12)
 
 static size_t _xpc_dictionary_serialized_size(xpc_object_t obj);
@@ -29,7 +28,7 @@ static size_t _xpc_serialized_size(xpc_object_t obj) {
         case XPC_DATA:
             return sizeof(xpc_s_type_t) + sizeof(int32_t) + XPC_DATA_PAD_SIZE(xpc_data_get_length(obj));
         case XPC_STRING:
-            return sizeof(xpc_s_type_t) + sizeof(int32_t) + XPC_STRING_PAD_LEN(xpc_string_get_length(obj));
+            return sizeof(xpc_s_type_t) + sizeof(int32_t) + XPC_DATA_PAD_SIZE(xpc_string_get_length(obj) + 1);
         case XPC_DICTIONARY:
             return _xpc_dictionary_serialized_size(obj);
         case XPC_ARRAY:
@@ -47,7 +46,7 @@ static size_t _xpc_dictionary_serialized_size(xpc_object_t obj) {
     for (i = 0; i < XPC_DICT_NBUCKETS; ++i) {
         el = dict->buckets[i];
         while (el) {
-            ret += XPC_STRING_PAD_LEN(el->key_length);
+            ret += XPC_DATA_PAD_SIZE(el->key_length + 1);
             ret += _xpc_serialized_size(el->value);
             el = el->next;
         }
@@ -69,6 +68,10 @@ size_t xpc_serialized_size(xpc_object_t obj) {
 }
 
 #define XPC_WRITE(type, value) *((type *) buf) = value; buf += sizeof(type);
+#define XPC_COPY_PADDED(data, len) \
+    memcpy(buf, (data), (len)); \
+    memset(&buf[len], 0, XPC_DATA_PAD_SIZE(len) - (len)); \
+    buf += XPC_DATA_PAD_SIZE(len);
 
 static size_t _xpc_dictionary_serialize(xpc_object_t obj, uint8_t *buf);
 static size_t _xpc_array_serialize(xpc_object_t obj, uint8_t *buf);
@@ -97,16 +100,12 @@ static size_t _xpc_serialize(xpc_object_t o, uint8_t *buf) {
         case XPC_DATA:
             XPC_WRITE(xpc_s_type_t, XPC_SERIALIZED_TYPE(XPC_DATA))
             len = xpc_data_get_length(o);
-            XPC_WRITE(uint32_t, len)
-            memcpy(buf, xpc_data_get_bytes_ptr(o), len);
-            buf += len;
+            XPC_COPY_PADDED(xpc_data_get_bytes_ptr(o), len)
             break;
         case XPC_STRING:
             XPC_WRITE(xpc_s_type_t, XPC_SERIALIZED_TYPE(XPC_STRING))
-            len = xpc_string_get_length(o) + 1;
-            XPC_WRITE(uint32_t, len)
-            memcpy(buf, xpc_string_get_string_ptr(o), len);
-            buf += len;
+            len = xpc_string_get_length(o);
+            XPC_COPY_PADDED(xpc_string_get_string_ptr(o), len)
             break;
         case XPC_DICTIONARY:
             return _xpc_dictionary_serialize(o, buf);
@@ -121,7 +120,6 @@ static size_t _xpc_serialize(xpc_object_t o, uint8_t *buf) {
 static size_t _xpc_dictionary_serialize(xpc_object_t obj, uint8_t *buf) {
     uint8_t *const buf_i = buf;
     uint32_t *size_ptr;
-    size_t key_size;
     struct xpc_dict *dict = (struct xpc_dict *) obj;
     int i;
     struct xpc_dict_el *el;
@@ -132,10 +130,7 @@ static size_t _xpc_dictionary_serialize(xpc_object_t obj, uint8_t *buf) {
     for (i = 0; i < XPC_DICT_NBUCKETS; ++i) {
         el = dict->buckets[i];
         while (el) {
-            key_size = XPC_STRING_PAD_LEN(el->key_length);
-            memcpy(buf, el->key, el->key_length + 1);
-            memset(&buf[el->key_length + 1], 0, key_size - (el->key_length + 1));
-            buf += key_size;
+            XPC_COPY_PADDED(el->key, el->key_length + 1)
             buf += _xpc_serialize(el->value, buf);
             el = el->next;
         }
@@ -191,14 +186,15 @@ static xpc_object_t _xpc_deserialize(const uint8_t *buf, size_t *offp, size_t le
         case XPC_DATA:
             tlen = XPC_READ(int32_t);
             ret = xpc_data_create(&buf[off], tlen);
-            off += tlen;
+            off += XPC_DATA_PAD_SIZE(tlen);
             break;
         case XPC_STRING:
             tlen = XPC_READ(int32_t);
-            if (tlen > 0) {
+            if (tlen > 0)
                 ret = xpc_string_create_with_length((char *) &buf[off], tlen - 1);
-                off += tlen;
-            }
+            else
+                ret = xpc_string_create("");
+            off += XPC_DATA_PAD_SIZE(tlen);
             break;
         case XPC_DICTIONARY:
             *offp = off;
@@ -225,7 +221,7 @@ static xpc_object_t _xpc_deserialize_dictionary(const uint8_t *buf, size_t *offp
     while (r_cnt--) {
         key = (char *) &buf[off];
         key_size = strnlen(key, len - off);
-        off += XPC_STRING_PAD_LEN(key_size);
+        off += XPC_DATA_PAD_SIZE(key_size + 1);
         val = _xpc_deserialize(buf, &off, len);
         xpc_dictionary_set_value(ret, key, val);
     }
