@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <inttypes.h>
 
+static void _xpc_debug_print_array(xpc_object_t obj, xpc_debug_write out);
 static void _xpc_debug_print_dict(xpc_object_t obj, xpc_debug_write out);
 
 void xpc_debug_print(xpc_object_t obj, xpc_debug_write out) {
@@ -36,10 +37,27 @@ void xpc_debug_print(xpc_object_t obj, xpc_debug_write out) {
             out(xpc_string_get_string_ptr(obj));
             out("\"");
             break;
+        case XPC_ARRAY:
+            _xpc_debug_print_array(obj, out);
+            break;
         case XPC_DICTIONARY:
             _xpc_debug_print_dict(obj, out);
             break;
     }
+}
+
+static void _xpc_debug_print_array(xpc_object_t obj, xpc_debug_write out) {
+    struct xpc_array *arr = (struct xpc_array *) obj;
+    int i;
+    out("[");
+    bool first = true;
+    for (i = 0; i < arr->count; ++i) {
+        if (!first)
+            out(", ");
+        first = false;
+        xpc_debug_print(arr->value[i], out);
+    }
+    out("]");
 }
 
 static void _xpc_debug_print_dict(xpc_object_t obj, xpc_debug_write out) {

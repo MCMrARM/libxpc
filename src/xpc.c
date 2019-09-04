@@ -268,6 +268,7 @@ static void _xpc_array_free(xpc_object_t obj) {
     struct xpc_array *arr = (struct xpc_array *) obj;
     for (i = 0; i < arr->count; i++)
         xpc_free(arr->value[i]);
+    free(arr->value);
     free(obj);
 }
 void xpc_array_append_value(xpc_object_t obj, xpc_object_t value) {
