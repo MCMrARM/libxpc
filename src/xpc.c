@@ -263,6 +263,16 @@ xpc_object_t xpc_array_create(const xpc_object_t *values, size_t count) {
     }
     return arr;
 }
+xpc_object_t xpc_array_create_preallocated(size_t mem_count) {
+    struct xpc_array *arr = malloc(sizeof(struct xpc_array));
+    arr->type = XPC_ARRAY;
+    arr->count = 0;
+    arr->mem_count = mem_count;
+    arr->value = NULL;
+    if (mem_count > 0)
+        arr->value = malloc(mem_count * sizeof(xpc_object_t));
+    return arr;
+}
 static void _xpc_array_free(xpc_object_t obj) {
     size_t i;
     struct xpc_array *arr = (struct xpc_array *) obj;

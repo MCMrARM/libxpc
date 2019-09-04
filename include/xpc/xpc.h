@@ -64,6 +64,7 @@ void xpc_dictionary_set_data(xpc_object_t obj, const char *key, const void *valu
 void xpc_dictionary_set_string(xpc_object_t obj, const char *key, const char *value);
 
 xpc_object_t xpc_array_create(const xpc_object_t *values, size_t count);
+xpc_object_t xpc_array_create_preallocated(size_t mem_count);
 void xpc_array_append_value(xpc_object_t obj, xpc_object_t value);
 void xpc_array_set_value(xpc_object_t obj, size_t index, xpc_object_t value);
 xpc_object_t xpc_array_get_value(xpc_object_t obj, size_t index);

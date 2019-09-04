@@ -13,6 +13,7 @@ typedef uint32_t xpc_s_type_t;
 #define XPC_SERIALIZED_TYPE(typ) (typ << 12)
 
 static size_t _xpc_dictionary_serialized_size(xpc_object_t obj);
+static size_t _xpc_array_serialized_size(xpc_object_t obj);
 
 static size_t _xpc_serialized_size(xpc_object_t obj) {
     struct xpc_value *v = (struct xpc_value *) obj;
@@ -31,6 +32,8 @@ static size_t _xpc_serialized_size(xpc_object_t obj) {
             return sizeof(xpc_s_type_t) + sizeof(int32_t) + XPC_STRING_PAD_LEN(xpc_string_get_length(obj));
         case XPC_DICTIONARY:
             return _xpc_dictionary_serialized_size(obj);
+        case XPC_ARRAY:
+            return _xpc_array_serialized_size(obj);
         default:
             return 0;
     }
@@ -52,6 +55,15 @@ static size_t _xpc_dictionary_serialized_size(xpc_object_t obj) {
     return ret;
 }
 
+static size_t _xpc_array_serialized_size(xpc_object_t obj) {
+    size_t ret = sizeof(xpc_s_type_t) + sizeof(uint32_t) * 2;
+    struct xpc_array *arr = (struct xpc_array *) obj;
+    int i;
+    for (i = 0; i < arr->count; ++i)
+        ret += _xpc_serialized_size(arr->value[i]);
+    return ret;
+}
+
 size_t xpc_serialized_size(xpc_object_t obj) {
     return _xpc_serialized_size(obj) + sizeof(uint32_t) * 2;
 }
@@ -59,6 +71,7 @@ size_t xpc_serialized_size(xpc_object_t obj) {
 #define XPC_WRITE(type, value) *((type *) buf) = value; buf += sizeof(type);
 
 static size_t _xpc_dictionary_serialize(xpc_object_t obj, uint8_t *buf);
+static size_t _xpc_array_serialize(xpc_object_t obj, uint8_t *buf);
 
 static size_t _xpc_serialize(xpc_object_t o, uint8_t *buf) {
     size_t len;
@@ -97,6 +110,8 @@ static size_t _xpc_serialize(xpc_object_t o, uint8_t *buf) {
             break;
         case XPC_DICTIONARY:
             return _xpc_dictionary_serialize(o, buf);
+        case XPC_ARRAY:
+            return _xpc_array_serialize(o, buf);
         default:
             break;
     }
@@ -129,6 +144,21 @@ static size_t _xpc_dictionary_serialize(xpc_object_t obj, uint8_t *buf) {
     return buf - buf_i;
 }
 
+static size_t _xpc_array_serialize(xpc_object_t obj, uint8_t *buf) {
+    uint8_t *const buf_i = buf;
+    uint32_t *size_ptr;
+    struct xpc_array *arr = (struct xpc_array *) obj;
+    int i;
+    XPC_WRITE(xpc_s_type_t, XPC_SERIALIZED_TYPE(XPC_ARRAY))
+    size_ptr = (uint32_t *) buf;
+    XPC_WRITE(uint32_t, 0)
+    XPC_WRITE(uint32_t, arr->count)
+    for (i = 0; i < arr->count; ++i)
+        buf += _xpc_serialize(arr->value[i], buf);
+    *size_ptr = buf - (uint8_t *) (size_ptr + 1);
+    return buf - buf_i;
+}
+
 size_t xpc_serialize(xpc_object_t o, uint8_t *buf) {
     XPC_WRITE(uint32_t, XPC_BIN_MAGIC);
     XPC_WRITE(uint32_t, XPC_BIN_VERSION);
@@ -138,6 +168,7 @@ size_t xpc_serialize(xpc_object_t o, uint8_t *buf) {
 #define XPC_READ(type) ({ off += sizeof(type); off <= len ? *((type *) (&buf[off - sizeof(type)])) : 0; })
 
 static xpc_object_t _xpc_deserialize_dictionary(const uint8_t *buf, size_t *offp, size_t len);
+static xpc_object_t _xpc_deserialize_array(const uint8_t *buf, size_t *offp, size_t len);
 
 static xpc_object_t _xpc_deserialize(const uint8_t *buf, size_t *offp, size_t len) {
     size_t tlen, off = *offp;
@@ -172,6 +203,9 @@ static xpc_object_t _xpc_deserialize(const uint8_t *buf, size_t *offp, size_t le
         case XPC_DICTIONARY:
             *offp = off;
             return _xpc_deserialize_dictionary(buf, offp, len);
+        case XPC_ARRAY:
+            *offp = off;
+            return _xpc_deserialize_array(buf, offp, len);
     }
     *offp = off;
     return ret;
@@ -194,6 +228,24 @@ static xpc_object_t _xpc_deserialize_dictionary(const uint8_t *buf, size_t *offp
         off += XPC_STRING_PAD_LEN(key_size);
         val = _xpc_deserialize(buf, &off, len);
         xpc_dictionary_set_value(ret, key, val);
+    }
+    *offp = off;
+    return ret;
+}
+
+static xpc_object_t _xpc_deserialize_array(const uint8_t *buf, size_t *offp, size_t len) {
+    size_t off = *offp;
+    size_t size, r_cnt, m_len;
+    xpc_object_t ret, val;
+    size = XPC_READ(uint32_t);
+    m_len = off + size;
+    if (len > m_len)
+        len = m_len;
+    r_cnt = XPC_READ(uint32_t);
+    ret = xpc_array_create_preallocated(r_cnt);
+    while (r_cnt--) {
+        val = _xpc_deserialize(buf, &off, len);
+        xpc_array_append_value(ret, val);
     }
     *offp = off;
     return ret;
